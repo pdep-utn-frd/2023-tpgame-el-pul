@@ -3,6 +3,4 @@ import example.*
 
 program juego {
 	juego.iniciar()
-	
-
 }

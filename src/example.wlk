@@ -1,8 +1,16 @@
 import wollok.game.*
+import comida.Comida
+import viborita.*
 
 
 object juego {
-	var property velocidad = 60
+	var property velocidad = 100
+	var property comidaActiva = new Comida(position = game.at(8, 7))
+	var property ancho = 20
+	var property alto = 16
+	var property estaPausa = false
+	var property puntaje = 0
+	
 	
 	method iniciar() {
 		self.configurarInicio()
@@ -13,13 +21,13 @@ object juego {
 	}
 	
 	method configurarInicio() {
-		game.width(30)
-		game.height(30)
-		game.cellSize(20)
+		game.width(ancho)
+		game.height(alto)
+		game.cellSize(23)
 		game.title("La Viborita")
 		
 		game.onTick(velocidad, "mover viborita", {viborita.mover()})
-		game.onTick(2000, "agregar parte SACAR DESPUES", {viborita.hayQueAgrandar(true)})
+//		game.onTick(1000, "agregar parte SACAR DESPUES", {viborita.hayQueAgrandar(true)})
 		
 	}
 	
@@ -31,6 +39,8 @@ object juego {
 	method agregarVisuales() {
 		game.addVisual(viborita.cabeza())
 		game.addVisual(viborita.tmp())
+		game.addVisual(comidaActiva)
+		game.addVisual(score)
 		
 	}
 	
@@ -39,12 +49,35 @@ object juego {
 		keyboard.down().onPressDo({viborita.cambiarDireccion('S')})
 		keyboard.left().onPressDo({viborita.cambiarDireccion('O')})
 		keyboard.right().onPressDo({viborita.cambiarDireccion('E')})
+		
+		keyboard.w().onPressDo({viborita.cambiarDireccion('N')})
+		keyboard.s().onPressDo({viborita.cambiarDireccion('S')})
+		keyboard.a().onPressDo({viborita.cambiarDireccion('O')})
+		keyboard.d().onPressDo({viborita.cambiarDireccion('E')})
+		
+		keyboard.enter().onPressDo({game.stop()})
+		keyboard.space().onPressDo({self.pausa()})
+	}
+	
+	method pausa (){
+		if (estaPausa == false){
+			game.removeTickEvent("mover viborita")
+			estaPausa = true
+		} else{
+			game.onTick(velocidad, "mover viborita", {viborita.mover()})
+			estaPausa = false
+			
+		}
 	}
 	
 	method agregarColisiones() {
-		game.onCollideDo(viborita.cabeza(), {parte => 
-			if (viborita.cuerpo().filter({aux => aux == parte}).size() != 0) {
+		game.onCollideDo(viborita.cabeza(), {cosa => 
+			if (viborita.cuerpo().filter({aux => aux == cosa}).size() != 0) {
 				viborita.morir()
+			} else if (cosa == comidaActiva) {
+				self.nuevaComida()
+				viborita.hayQueAgrandar(true)
+				puntaje+=20
 			}
 		})
 	}
@@ -54,100 +87,57 @@ object juego {
 		game.addVisual(viborita.tmp())
 	}
 	
-}
-
-class ParteDeViborita {
-	var property position
-	var property posicionAnterior = false
-	var property direccion = 'E'
-	var property anterior
-	var property esCabeza
-	method image() = "assets/viborita.png"
+	method nuevaComida() {
+		game.removeVisual(comidaActiva)
+		
+//		var grilla = []
+//		alto.times({i =>
+//			const fila = []
+//			ancho.times({j =>
+//				fila.add(j-1)
+//			})
+//			grilla.add(fila)
+//		})
+//		
+//		viborita.cuerpo().forEach({parte => 
+//			const x = parte.position().x()
+//			const y = parte.position().y()
+//			
+//			grilla.get(y).remove(x)
+//			return parte
+//		})
+//		
+//		const grilla_filtrada = grilla.filter({r => r.size() != 0})
+//		const fila = grilla_filtrada.get(0.randomUpTo(grilla_filtrada.size()))
+//		var y
+//		
+//		grilla.size().times({i => 
+//			if (grilla.get(i-1) == fila) {
+//				y = i
+//			}
+//		})
+//		var x = fila.get(0.randomUpTo(fila.size()))
+		
+		const nuevaPosicion = self.nuevaPosicionDeComida()
+		comidaActiva = new Comida(position=nuevaPosicion)
+		game.addVisual(comidaActiva)
+	}
 	
-	method moverUno(pos) {
-		posicionAnterior = position
-		if (esCabeza) {
-			if (direccion == 'E') {
-			position = position.right(1)
-			} else if (direccion == 'O') {
-				position = position.left(1)
-			} else if (direccion == 'N') {
-				position = position.up(1)
-			} else {
-				position = position.down(1)
-			}
-			if (position.x() >= 30 || position.y() >= 30 || position.x() < 0 || position.y() < 0) {
-				viborita.morir()
-			}
+	method nuevaPosicionDeComida() {
+		const x = 0.randomUpTo(ancho)
+		const y = 0.randomUpTo(alto-1)
+		
+		if (viborita.cuerpo().any({p => p == game.at(x, y)})) {
+			return self.nuevaPosicionDeComida()
+			
 		} else {
-			position = pos
-		}
-		
-		if (anterior != false) {
-			anterior.moverUno(posicionAnterior)
-			anterior.direccion(direccion)
+			return game.at(x, y)
 		}
 	}
-	
 }
 
-object viborita {
-	var property tmp = new ParteDeViborita(esCabeza = false, anterior=false, position = game.at(9,10))
-	var property cabeza = new ParteDeViborita(esCabeza = true, anterior = tmp, position = game.at(10, 10))
-	var property cuerpo = [cabeza, cabeza.anterior()]
-	var property cola = tmp
-	var property hayQueAgrandar = false
-	var property puedeCambiarDireccion = true
-	
-	method agrandar() {
-		var nuevaPosicion = cola.posicionAnterior()
-		var nuevaParte = new ParteDeViborita(esCabeza = false, anterior = false, position = nuevaPosicion, direccion = cola.direccion())
-		cola.anterior(nuevaParte)
-		cuerpo.add(nuevaParte)
-		cola = nuevaParte
-		game.addVisual(nuevaParte)
-	}
-	
-	method cambiarDireccion(dir) {
-		var c1 = dir == 'N' && cabeza.direccion() == 'S'
-		var c2 = dir == 'S' && cabeza.direccion() == 'N'
-		var c3 = dir == 'E' && cabeza.direccion() == 'O'
-		var c4 = dir == 'O' && cabeza.direccion() == 'E'
-		if (puedeCambiarDireccion && not (c1 || c2 || c3 || c4)) {
-			cabeza.direccion(dir)
-			puedeCambiarDireccion = false
-		}
-	}
-	
-	method mover() {
-		if (hayQueAgrandar) {
-			self.agrandar()
-			hayQueAgrandar = false
-		}
-		cabeza.moverUno(false)
-		puedeCambiarDireccion = true
-	}
-	
-	method eliminarViborita() {
-		cuerpo.forEach({p => game.removeVisual(p)})
-		cuerpo.clear()
-	}
-	
-	
-	method morir() {
-		self.eliminarViborita()
-		game.removeTickEvent("mover viborita")
-		game.removeTickEvent("agregar parte SACAR DESPUES")
-		
-		tmp = new ParteDeViborita(esCabeza = false, anterior=false, position = game.at(9,10))
-		cabeza = new ParteDeViborita(esCabeza = true, anterior = tmp, position = game.at(10, 10))
-		cuerpo = [cabeza, cabeza.anterior()]
-		cola = tmp
-		hayQueAgrandar = false
-		game.addVisual(viborita.cabeza())
-		game.addVisual(viborita.tmp())
-		juego.agregarColisiones()
-		game.onTick(juego.velocidad(), "mover viborita", {self.mover()})
-		game.onTick(2000, "agregar parte SACAR DESPUES", {self.hayQueAgrandar(true)})
-	}
+object score {
+	var property position = game.at(1, juego.alto()-2)
+	method text() = "Puntaje: " + juego.puntaje()
 }
+
