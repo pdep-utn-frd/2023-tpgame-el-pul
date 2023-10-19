@@ -1,0 +1,32 @@
+import wollok.game.*
+import example.*
+
+program juego { 
+	
+	var nivel3 = new Nivel(
+		velocidad = 60,
+		proximoNivel = null,
+		mensajeExito = "Felicidades! Avanzaste al nivel 3. \n Presione espacio para continuar.",
+		puntajeParaAvanzar = 700,
+		textoNivel = "Nivel 3"
+	)
+	
+	var nivel2 = new Nivel(
+		velocidad = 100,
+		proximoNivel = nivel3,
+		mensajeExito = "Felicidades! Avanzaste al nivel 2. \n Presione espacio para continuar.",
+		puntajeParaAvanzar = 450,
+		textoNivel = "Nivel 2"
+	)
+	
+	var nivel1 = new Nivel(
+		velocidad = 150,
+		proximoNivel = nivel2,
+		mensajeExito = "",
+		puntajeParaAvanzar = 150,
+		textoNivel = "Nivel 1"
+	)
+	
+	
+	juego.iniciar(nivel1)
+}
