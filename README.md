@@ -13,28 +13,28 @@ del teclado o las teclas w, a, s y d.
 
 ### Mate
 
-![](./src/assets/mate.png)
+![Mate](./src/assets/mate.png)
 
 El mate es la comida normal del juego, que aumenta el puntaje en 10 puntos e
 incrementa el largo del cuerpo de la serpiente en 1.
 
 ### Whiskey
 
-![](./src/assets/blue_label.png)
+![Whiskey](./src/assets/blue_label.png)
 
 El Whiskey es una comida especial que incrementa el puntaje en 30 puntos, pero
 invierte los controles temporalmente.
 
 ### Red Bull
 
-![](./src/assets/redbull.png)
+![Red Bull](./src/assets/redbull.png)
 
 La Red Bull hace que la serpiente incremente su velocidad temporalmente, e
 incrementa el puntaje en 15 puntos.
 
 ### HerbaLife
 
-![](./src/assets/herbalife.png)
+![HerbaLife](./src/assets/herbalife.png)
 
 El HerbaLife tiene como efecto reducir en 1 el largo del cuerpo de la serpiente,
 aunque solo incrementa el puntaje en 5 puntos.
