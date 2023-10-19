@@ -1,11 +1,19 @@
 import wollok.game.*
 import example.*
+import efectos.*
 
 class ParteDeViborita {
 	var property position
 	var property posicionAnterior = false
 	var property anterior
-	method image() = "assets/cuerpo_2.png"
+	method image() {
+		if (confundido.equals(viborita.efecto())) {
+			return "assets/confundido/cuerpo.png"
+		} else if (velocista.equals(viborita.efecto())) {
+			return "assets/velocista/cuerpo.png"
+		}
+		return "assets/normal/cuerpo.png"
+	}
 	
 	method moverUno(pos) {
 		posicionAnterior = position
@@ -22,21 +30,23 @@ class Cabeza inherits ParteDeViborita {
 	var property direccion = 'E'
 
 	override method image() {
+		const carpeta = "assets/" + viborita.efecto().assetsCarpeta() + "/"
 		if (direccion == 'E') {
-			return "assets/cabeza_este.png"
+			return carpeta + "cabeza_este.png"
 		} else if (direccion == 'O') {
-			return "assets/cabeza_oeste.png"
+			return carpeta + "cabeza_oeste.png"
 		} else if (direccion == 'N') {
-			return "assets/cabeza_norte.png"
+			return carpeta + "cabeza_norte.png"
 		} else {
-			return "assets/cabeza_sur.png"
+			return carpeta + "cabeza_sur.png"
 		}
 	}
 	
 	override method moverUno(pos) {
 		posicionAnterior = position
+		
 		if (direccion == 'E') {
-		position = position.right(1)
+			position = position.right(1)
 		} else if (direccion == 'O') {
 			position = position.left(1)
 		} else if (direccion == 'N') {
@@ -45,8 +55,14 @@ class Cabeza inherits ParteDeViborita {
 			position = position.down(1)
 		}
 		
+		
 		if (position.x() >= juego.ancho() || position.y() >= juego.alto()-1 || position.x() < 0 || position.y() < 0) {
+			juego.puntaje(0)
 			viborita.morir()
+			game.addVisual(pantallaGameOver)
+			juego.nivel(juego.primerNivel())
+			juego.reiniciar()
+			juego.pausa()
 		}
 		
 		if (anterior != false) {
@@ -63,6 +79,8 @@ object viborita {
 	var property cola = tmp
 	var property hayQueAgrandar = false
 	var property puedeCambiarDireccion = true
+	var property controlador = controlViborita
+	var property efecto = nulo
 	
 	method agrandar() {
 		var nuevaPosicion = cola.posicionAnterior()
@@ -74,12 +92,13 @@ object viborita {
 	}
 	
 	method cambiarDireccion(dir) {
-		var c1 = dir == 'N' && cabeza.direccion() == 'S'
-		var c2 = dir == 'S' && cabeza.direccion() == 'N'
-		var c3 = dir == 'E' && cabeza.direccion() == 'O'
-		var c4 = dir == 'O' && cabeza.direccion() == 'E'
+		var nuevaDir = controlador.nuevaDireccion(dir)
+		var c1 = nuevaDir == 'N' && cabeza.direccion() == 'S'
+		var c2 = nuevaDir == 'S' && cabeza.direccion() == 'N'
+		var c3 = nuevaDir == 'E' && cabeza.direccion() == 'O'
+		var c4 = nuevaDir == 'O' && cabeza.direccion() == 'E'
 		if (puedeCambiarDireccion && not (c1 || c2 || c3 || c4)) {
-			cabeza.direccion(dir)
+			cabeza.direccion(nuevaDir)
 			puedeCambiarDireccion = false
 		}
 	}
@@ -93,6 +112,12 @@ object viborita {
 		puedeCambiarDireccion = true
 	}
 	
+	method cambiarEfecto(nuevoEfecto) {
+		efecto.eliminarEfecto()
+		efecto = nuevoEfecto
+		efecto.aplicarEfecto()
+	}
+	
 	method eliminarViborita() {
 		cuerpo.forEach({p => game.removeVisual(p)})
 		cuerpo.clear()
@@ -100,6 +125,7 @@ object viborita {
 	
 	
 	method morir() {
+		self.cambiarEfecto(nulo)
 		self.eliminarViborita()
 		game.removeTickEvent("mover viborita")
 		
@@ -108,10 +134,26 @@ object viborita {
 		cuerpo = [cabeza, cabeza.anterior()]
 		cola = tmp
 		hayQueAgrandar = false
-		game.addVisual(cabeza)
-		game.addVisual(tmp)
-		juego.agregarColisiones()
-		game.onTick(juego.velocidad(), "mover viborita", {self.mover()})
-		juego.puntaje(0)
+		
+	}
+}
+
+object controlViborita {
+	method nuevaDireccion(dir) {
+		return dir
+	}
+}
+
+object controlViboritaConfundida {
+	method nuevaDireccion(dir) {
+		if (dir == 'E') {
+			return 'O'
+		} else if (dir == 'O') {
+			return 'E'
+		} else if (dir == 'N') {
+			return 'S'
+		} else {
+			return 'N'
+		}
 	}
 }

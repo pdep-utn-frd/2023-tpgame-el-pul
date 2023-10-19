@@ -1,19 +1,24 @@
 import wollok.game.*
-import comida.Comida
+import comida.*
 import viborita.*
 
 
 object juego {
-	var property velocidad = 100
 	var property comidaActiva = new Comida(position = game.at(8, 7))
 	var property ancho = 20
 	var property alto = 16
 	var property estaPausa = false
 	var property puntaje = 0
+	var property nivel
+	var property primerNivel
+	var property comidasEspeciales = []
 	
 	
-	method iniciar() {
+	method iniciar(nivelInicial) {
+		nivel = nivelInicial
+		primerNivel = nivelInicial
 		self.configurarInicio()
+		self.configurarTickEvents()
 		self.agregarVisuales()
 		self.programarTeclas()
 		self.agregarColisiones()
@@ -25,15 +30,27 @@ object juego {
 		game.height(alto)
 		game.cellSize(23)
 		game.title("La Viborita")
+		game.boardGround("assets/fondo.png")
 		
-		game.onTick(velocidad, "mover viborita", {viborita.mover()})
-//		game.onTick(1000, "agregar parte SACAR DESPUES", {viborita.hayQueAgrandar(true)})
+
 		
 	}
 	
-	method aumentarVelocidad(nuevaVel) {
-		game.removeTickEvent("mover viborita")
-		game.onTick(nuevaVel, "mover viborita", {viborita.mover()})
+	method configurarTickEvents() {
+		game.onTick(nivel.velocidad(), "mover viborita", {viborita.mover()})
+		//game.onTick(1000, "agregar parte SACAR DESPUES", {viborita.hayQueAgrandar(true)})
+		
+		game.onTick(5000, "agregar comida especial", {
+			var nuevaComidaEspecial = generadorComidaEspecial.nuevaComida()
+			comidasEspeciales.add(nuevaComidaEspecial)
+			game.addVisual(nuevaComidaEspecial)
+			
+			game.schedule(6000, {
+				if (game.hasVisual(nuevaComidaEspecial)) {
+					game.removeVisual(nuevaComidaEspecial)
+				}
+			})
+		})
 	}
 	
 	method agregarVisuales() {
@@ -41,7 +58,7 @@ object juego {
 		game.addVisual(viborita.tmp())
 		game.addVisual(comidaActiva)
 		game.addVisual(score)
-		
+		game.addVisual(nivelActual)
 	}
 	
 	method programarTeclas() {
@@ -64,7 +81,14 @@ object juego {
 			game.removeTickEvent("mover viborita")
 			estaPausa = true
 		} else{
-			game.onTick(velocidad, "mover viborita", {viborita.mover()})
+			if (game.hasVisual(pantallaSubirNivel)) {
+				game.removeVisual(pantallaSubirNivel)
+			}
+			
+			if (game.hasVisual(pantallaGameOver)) {
+				game.removeVisual(pantallaGameOver)
+			}
+			game.onTick(nivel.velocidad(), "mover viborita", {viborita.mover()})
 			estaPausa = false
 			
 		}
@@ -72,52 +96,37 @@ object juego {
 	
 	method agregarColisiones() {
 		game.onCollideDo(viborita.cabeza(), {cosa => 
-			if (viborita.cuerpo().filter({aux => aux == cosa}).size() != 0) {
+			if (viborita.cuerpo().any({aux => aux == cosa})) {
+				self.puntaje(0)
 				viborita.morir()
+				game.addVisual(pantallaGameOver)
+				nivel = primerNivel
+				juego.reiniciar()	
+				juego.pausa()
 			} else if (cosa == comidaActiva) {
-				self.nuevaComida()
-				viborita.hayQueAgrandar(true)
-				puntaje+=20
+				comidaActiva.comer()
+				
+			} else if (comidasEspeciales.contains(cosa)) {
+				cosa.comer()
+			}
+			if (juego.puntaje() >= nivel.puntajeParaAvanzar()) {
+				juego.subirNivel()
 			}
 		})
 	}
 	
 	method reiniciar() {
-		game.addVisual(viborita.cabeza())
-		game.addVisual(viborita.tmp())
+		game.removeVisual(score)
+		game.removeVisual(nivelActual)
+		game.removeVisual(comidaActiva)
+		game.removeTickEvent("agregar comida especial")
+		self.agregarVisuales()
+		self.configurarTickEvents()
+		self.agregarColisiones()
 	}
 	
 	method nuevaComida() {
 		game.removeVisual(comidaActiva)
-		
-//		var grilla = []
-//		alto.times({i =>
-//			const fila = []
-//			ancho.times({j =>
-//				fila.add(j-1)
-//			})
-//			grilla.add(fila)
-//		})
-//		
-//		viborita.cuerpo().forEach({parte => 
-//			const x = parte.position().x()
-//			const y = parte.position().y()
-//			
-//			grilla.get(y).remove(x)
-//			return parte
-//		})
-//		
-//		const grilla_filtrada = grilla.filter({r => r.size() != 0})
-//		const fila = grilla_filtrada.get(0.randomUpTo(grilla_filtrada.size()))
-//		var y
-//		
-//		grilla.size().times({i => 
-//			if (grilla.get(i-1) == fila) {
-//				y = i
-//			}
-//		})
-//		var x = fila.get(0.randomUpTo(fila.size()))
-		
 		const nuevaPosicion = self.nuevaPosicionDeComida()
 		comidaActiva = new Comida(position=nuevaPosicion)
 		game.addVisual(comidaActiva)
@@ -134,10 +143,91 @@ object juego {
 			return game.at(x, y)
 		}
 	}
+	
+	method subirNivel() {
+		
+		if (nivel.proximoNivel() != null) {
+			game.addVisual(pantallaSubirNivel)
+			nivel = nivel.proximoNivel()
+			viborita.morir()
+			self.reiniciar()
+//			puntaje = 0
+			self.pausa()
+		} else {
+			viborita.morir()
+			game.addVisual(pantallaFinDeJuego)
+			
+		}
+		
+		
+		
+	}
 }
 
 object score {
 	var property position = game.at(1, juego.alto()-2)
 	method text() = "Puntaje: " + juego.puntaje()
+	method textColor() = "FFFFFFFF"
+}
+
+object nivelActual {
+	var property position = game.at(juego.ancho() - 3, juego.alto()-2)
+	method text() = juego.nivel().textoNivel()
+	method textColor() = "FFFFFFFF"
+}
+
+object pantallaGameOver {
+	var property text = "GAME OVER \n Presione espacio para continuar."
+	
+	method textColor() = "000000FF"
+	
+	method position() {
+		var y = (juego.alto() / 2).roundUp()
+		var x = (juego.ancho() / 2).roundUp() - 1
+		
+		return game.at(x, y)
+	}
+	
+	
+}
+
+object pantallaSubirNivel {
+	method text() {
+		return juego.nivel().mensajeExito()
+	}
+	
+	method textColor() = "000000FF"
+	
+	method position() {
+		var y = (juego.alto() / 2).roundUp()
+		var x = (juego.ancho() / 2).roundUp() - 1
+		
+		return game.at(x, y)
+	}
+}
+
+object pantallaFinDeJuego {
+	method text() {
+		return "Felicidades! Completaste el juego. \n Presione ENTER para salir."
+	}
+	
+	method textColor() = "000000FF"
+	
+	method position() {
+		var y = (juego.alto() / 2).roundUp()
+		var x = (juego.ancho() / 2).roundUp() - 1
+		
+		return game.at(x, y)
+	}
+}
+
+
+
+class Nivel {
+	var property velocidad
+	var property mensajeExito
+	var property proximoNivel
+	var property puntajeParaAvanzar
+	var property textoNivel
 }
 
