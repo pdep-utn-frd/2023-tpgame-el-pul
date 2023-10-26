@@ -18,3 +18,9 @@ object velocistaCancion {
 	}
 	
 }
+
+object aplausos {
+	method play() {
+		game.sound("assets/sonidos/aplausos.wav").play()
+	}
+}

@@ -1,6 +1,7 @@
 import wollok.game.*
 import comida.*
 import viborita.*
+import sonidos.*
 
 
 object juego {
@@ -154,8 +155,10 @@ object juego {
 //			puntaje = 0
 			self.pausa()
 		} else {
+			aplausos.play()
 			viborita.morir()
 			game.addVisual(pantallaFinDeJuego)
+			
 			
 		}
 		
