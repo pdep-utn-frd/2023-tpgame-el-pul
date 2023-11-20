@@ -39,7 +39,6 @@ object juego {
 	
 	method configurarTickEvents() {
 		game.onTick(nivel.velocidad(), "mover viborita", {viborita.mover()})
-		//game.onTick(1000, "agregar parte SACAR DESPUES", {viborita.hayQueAgrandar(true)})
 		
 		game.onTick(5000, "agregar comida especial", {
 			var nuevaComidaEspecial = generadorComidaEspecial.nuevaComida()
@@ -63,16 +62,17 @@ object juego {
 	}
 	
 	method programarTeclas() {
-		keyboard.up().onPressDo({viborita.cambiarDireccion('N')})
-		keyboard.down().onPressDo({viborita.cambiarDireccion('S')})
-		keyboard.left().onPressDo({viborita.cambiarDireccion('O')})
-		keyboard.right().onPressDo({viborita.cambiarDireccion('E')})
+		keyboard.up().onPressDo({viborita.cambiarDireccion(norte)})
+		keyboard.down().onPressDo({viborita.cambiarDireccion(sur)})
+		keyboard.right().onPressDo({viborita.cambiarDireccion(este)})
+		keyboard.left().onPressDo({viborita.cambiarDireccion(oeste)})
 		
-		keyboard.w().onPressDo({viborita.cambiarDireccion('N')})
-		keyboard.s().onPressDo({viborita.cambiarDireccion('S')})
-		keyboard.a().onPressDo({viborita.cambiarDireccion('O')})
-		keyboard.d().onPressDo({viborita.cambiarDireccion('E')})
+		keyboard.w().onPressDo({viborita.cambiarDireccion(norte)})
+		keyboard.s().onPressDo({viborita.cambiarDireccion(sur)})
+		keyboard.d().onPressDo({viborita.cambiarDireccion(este)})
+		keyboard.a().onPressDo({viborita.cambiarDireccion(oeste)})
 		
+		keyboard.p().onPressDo({self.aumentarPuntaje(50)})
 		keyboard.enter().onPressDo({game.stop()})
 		keyboard.space().onPressDo({self.pausa()})
 	}
@@ -97,21 +97,9 @@ object juego {
 	
 	method agregarColisiones() {
 		game.onCollideDo(viborita.cabeza(), {cosa => 
-			if (viborita.cuerpo().any({aux => aux == cosa})) {
-				self.puntaje(0)
-				viborita.morir()
-				game.addVisual(pantallaGameOver)
-				nivel = primerNivel
-				juego.reiniciar()	
-				juego.pausa()
-			} else if (cosa == comidaActiva) {
-				comidaActiva.comer()
-				
-			} else if (comidasEspeciales.contains(cosa)) {
-				cosa.comer()
-			}
+			cosa.colisionar()
 			if (juego.puntaje() >= nivel.puntajeParaAvanzar()) {
-				juego.subirNivel()
+				nivel.subirNivel()
 			}
 		})
 	}
@@ -145,25 +133,12 @@ object juego {
 		}
 	}
 	
-	method subirNivel() {
-		
-		if (nivel.proximoNivel() != null) {
-			game.addVisual(pantallaSubirNivel)
-			nivel = nivel.proximoNivel()
-			viborita.morir()
-			self.reiniciar()
-//			puntaje = 0
-			self.pausa()
-		} else {
-			aplausos.play()
-			viborita.morir()
-			game.addVisual(pantallaFinDeJuego)
-			
-			
-		}
-		
-		
-		
+	method aumentarPuntaje(c) {
+		puntaje += c
+	}
+	
+	method reiniciarPuntaje() {
+		puntaje = 0
 	}
 }
 
@@ -232,5 +207,42 @@ class Nivel {
 	var property proximoNivel
 	var property puntajeParaAvanzar
 	var property textoNivel
+
+	method subirNivel() {
+		if (self.proximoNivel() != null) {
+			game.addVisual(pantallaSubirNivel)
+			juego.nivel(self.proximoNivel())
+			viborita.morir()
+			juego.reiniciar()
+			juego.pausa()
+		} else {
+			aplausos.play()
+			viborita.morir()
+			game.addVisual(pantallaFinDeJuego)
+		}
+	}
 }
 
+const nivel3 = new Nivel(
+	velocidad = 60,
+	proximoNivel = null,
+	mensajeExito = "Felicidades! Avanzaste al nivel 3. \n Presione espacio para continuar.",
+	puntajeParaAvanzar = 700,
+	textoNivel = "Nivel 3"
+)
+
+const nivel2 = new Nivel(
+	velocidad = 100,
+	proximoNivel = nivel3,
+	mensajeExito = "Felicidades! Avanzaste al nivel 2. \n Presione espacio para continuar.",
+	puntajeParaAvanzar = 450,
+	textoNivel = "Nivel 2"
+)
+
+const nivel1 = new Nivel(
+	velocidad = 150,
+	proximoNivel = nivel2,
+	mensajeExito = "",
+	puntajeParaAvanzar = 150,
+	textoNivel = "Nivel 1"
+)

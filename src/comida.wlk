@@ -12,7 +12,11 @@ class Comida {
 		mate.play()
 		juego.nuevaComida()
 		viborita.hayQueAgrandar(true)
-		juego.puntaje(juego.puntaje() + 10)
+		juego.aumentarPuntaje(10)
+	}
+
+	method colisionar() {
+		self.comer()
 	}
 }
 
@@ -21,7 +25,7 @@ class ComidaConfundidora inherits Comida {
 	
 	override method comer() {
 		viborita.cambiarEfecto(confundido)
-		juego.puntaje(juego.puntaje() + 30)
+		juego.aumentarPuntaje(30)
 		game.removeVisual(self)
 		juego.comidasEspeciales().remove(self)
 		
@@ -37,7 +41,7 @@ class ComidaVelocidad inherits Comida {
 	
 	override method comer() {
 		
-		juego.puntaje(juego.puntaje() + 15)
+		juego.aumentarPuntaje(15)
 		viborita.cambiarEfecto(velocista)
 		
 		game.removeVisual(self)
@@ -53,7 +57,7 @@ class ComidaAchicadora inherits Comida {
 	override method image() = "assets/herbalife.png"
 	
 	override method comer() {
-		juego.puntaje(juego.puntaje() + 5)
+		juego.aumentarPuntaje(5)
 		game.removeVisual(self)
 		juego.comidasEspeciales().remove(self)
 		

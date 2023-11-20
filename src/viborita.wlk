@@ -23,38 +23,29 @@ class ParteDeViborita {
 			anterior.moverUno(posicionAnterior)
 		}
 	}
+
+	method colisionar() {
+		juego.puntaje(0)
+		viborita.morir()
+		game.addVisual(pantallaGameOver)
+		juego.nivel(juego.primerNivel())
+		juego.reiniciar()	
+		juego.pausa()
+	}
 	
 }
 
 class Cabeza inherits ParteDeViborita {
-	var property direccion = 'E'
+	var property direccion = este
 
 	override method image() {
 		const carpeta = "assets/" + viborita.efecto().assetsCarpeta() + "/"
-		if (direccion == 'E') {
-			return carpeta + "cabeza_este.png"
-		} else if (direccion == 'O') {
-			return carpeta + "cabeza_oeste.png"
-		} else if (direccion == 'N') {
-			return carpeta + "cabeza_norte.png"
-		} else {
-			return carpeta + "cabeza_sur.png"
-		}
+		return carpeta + direccion.imagenCabeza()
 	}
 	
 	override method moverUno(pos) {
 		posicionAnterior = position
-		
-		if (direccion == 'E') {
-			position = position.right(1)
-		} else if (direccion == 'O') {
-			position = position.left(1)
-		} else if (direccion == 'N') {
-			position = position.up(1)
-		} else {
-			position = position.down(1)
-		}
-		
+		position = direccion.moverEnDireccion(position)
 		
 		if (position.x() >= juego.ancho() || position.y() >= juego.alto()-1 || position.x() < 0 || position.y() < 0) {
 			juego.puntaje(0)
@@ -92,12 +83,8 @@ object viborita {
 	}
 	
 	method cambiarDireccion(dir) {
-		var nuevaDir = controlador.nuevaDireccion(dir)
-		var c1 = nuevaDir == 'N' && cabeza.direccion() == 'S'
-		var c2 = nuevaDir == 'S' && cabeza.direccion() == 'N'
-		var c3 = nuevaDir == 'E' && cabeza.direccion() == 'O'
-		var c4 = nuevaDir == 'O' && cabeza.direccion() == 'E'
-		if (puedeCambiarDireccion && not (c1 || c2 || c3 || c4)) {
+		const nuevaDir = controlador.nuevaDireccion(dir)
+		if (puedeCambiarDireccion && cabeza.direccion().puedeIr(nuevaDir)) {
 			cabeza.direccion(nuevaDir)
 			puedeCambiarDireccion = false
 		}
@@ -145,15 +132,37 @@ object controlViborita {
 }
 
 object controlViboritaConfundida {
-	method nuevaDireccion(dir) {
-		if (dir == 'E') {
-			return 'O'
-		} else if (dir == 'O') {
-			return 'E'
-		} else if (dir == 'N') {
-			return 'S'
-		} else {
-			return 'N'
-		}
-	}
+	method nuevaDireccion(dir) = dir.opuesto() 
+}
+
+object norte {
+	method imagenCabeza() = "cabeza_norte.png"
+	method moverEnDireccion(pos) = pos.up(1) 
+	method opuesto() = sur
+	method puedeIr(dir) = dir != self.opuesto()
+
+}
+
+object sur {
+	method imagenCabeza() = "cabeza_sur.png"
+	method moverEnDireccion(pos) = pos.down(1) 
+	method opuesto() = norte
+	method puedeIr(dir) = dir != self.opuesto()
+
+}
+
+object este {
+	method imagenCabeza() = "cabeza_este.png"
+	method moverEnDireccion(pos) = pos.right(1) 
+	method opuesto() = oeste
+	method puedeIr(dir) = dir != self.opuesto()
+
+}
+
+object oeste {
+	method imagenCabeza() = "cabeza_oeste.png"
+	method moverEnDireccion(pos) = pos.left(1) 
+	method opuesto() = este
+	method puedeIr(dir) = dir != self.opuesto()
+
 }
