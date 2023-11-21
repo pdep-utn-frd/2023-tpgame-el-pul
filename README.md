@@ -1,5 +1,7 @@
 # Juego de la Viborita
 
+![Screenshot del juego](./screenshot.png)
+
 ## Como jugar
 
 El objetivo del juego es hacer que la viborita coma lo más posible sin chocarse
